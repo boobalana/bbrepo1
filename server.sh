@@ -1,8 +1,8 @@
 #!/bin/bash
 sleep 120s 
-sudo /usr/bin/chef-server-ctl/chef-server-ctl user-create bhubalan fiirstname laastname bhubalana85@gmail.com chefrocks --filename /etc/opscode/bhubalan.pem
+sudo /usr/bin/chef-server-ctl user-create bhubalan fiirstname laastname bhubalana85@gmail.com chefrocks --filename /etc/opscode/bhubalan.pem
 sleep 120s
-sudo /usr/bin/chef-server-ctl/chef-server-ctl org-create neufchef "neuu Learning Chef" --association bhubalan --filename /etc/opscode/neufchef-valiaatora.pem
+sudo /usr/bin/chef-server-ctl org-create neufchef "neuu Learning Chef" --association bhubalan --filename /etc/opscode/neufchef-valiaatora.pem
 sleep 120s
 wget https://raw.githubusercontent.com/boobalana/bbrepo1/master/first.txt  -O /tmp/first.txt
 wget https://raw.githubusercontent.com/boobalana/bbrepo1/master/final.txt -O /tmp/final.txt
