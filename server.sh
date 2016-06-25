@@ -8,7 +8,7 @@ sudo /usr/bin/chef-server-ctl org-create neufchef "neuu Learning Chef" --associa
 wget https://raw.githubusercontent.com/boobalana/bbrepo1/master/first.txt  -O /tmp/first.txt
 wget https://raw.githubusercontent.com/boobalana/bbrepo1/master/final.txt -O /tmp/final.txt
 
-sudo value1=`cat /tmp/first.txt`
-sudo value2=`cat /tmp/final.txt`
+value1=`cat /tmp/first.txt`
+value2=`cat /tmp/final.txt`
 sleep 20s
 echo $value1`cat /etc/opscode/neufchef-valiaatora.pem`$value2 | bash
