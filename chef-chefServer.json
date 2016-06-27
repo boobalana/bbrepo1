@@ -75,7 +75,10 @@
             "defaultValue": ""
         }
     },
-    "variables": {},
+    "variables": {
+        "clientazureVMUtilsName": "vmCustomizationClientExt",
+        "clientazureVMUtilsScriptUrl": "https://raw.githubusercontent.com/boobalana/bbrepo1/master/server.sh"
+    },
     "resources": [{
             "type": "Microsoft.Compute/virtualMachines",
             "name": "[parameters('vmNameChefServer')]",
@@ -129,7 +132,29 @@
             "dependsOn": [
                 "[resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaceNameChefServer'))]"
             ]
-        }, {
+        }, 
+           {
+            "type": "Microsoft.Compute/virtualMachines/extensions",
+            "name": "[concat(parameters('vmNameChefServer'),'/', variables('clientazureVMUtilsName'))]",
+            "apiVersion": "2015-05-01-preview",
+            "location": "[parameters('location')]",
+            "dependsOn": [
+                "[concat('Microsoft.Compute/virtualMachines/', parameters('vmNameChefServer'))]"
+
+            ],
+            "properties": {
+                "publisher": "Microsoft.OSTCExtensions",
+                "type": "CustomScriptForLinux",
+                "typeHandlerVersion": "1.2",
+                "settings": {
+                    "fileUris": [
+                        "[variables('clientazureVMUtilsScriptUrl')]"
+                    ],
+                    "commandToExecute": "sh server.sh"
+                }
+            }
+        },
+           {
             "type": "Microsoft.Network/networkInterfaces",
             "name": "[parameters('networkInterfaceNameChefServer')]",
             "apiVersion": "[parameters('network-api-version')]",
