@@ -122,21 +122,6 @@
           }
         }]
       }
-    },
-
-    {
-      "apiVersion": "[parameters('network-api-version')]",
-      "type": "Microsoft.Compute/availabilitySets",
-      "name": "[concat(parameters('availabilitySetSettings').name, copyindex())]",
-      "copy": {
-        "name": "availabilitySetLoop",
-        "count": "[parameters('availabilitySetSettings').count]"
-      },
-      "location": "[parameters('location')]",
-      "properties": {
-        "platformFaultDomainCount": "[parameters('availabilitySetSettings').fdCount]",
-        "platformUpdateDomainCount": "[parameters('availabilitySetSettings').udCount]"
-      }
     }
 
   ]
