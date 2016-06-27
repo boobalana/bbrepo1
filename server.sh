@@ -1,5 +1,5 @@
 #!/bin/bash
-sleep 300s
+sleep 600s
 ls -alR /etc/opscode
 sudo chmod 755 /etc/opscode/pivotal.pem
 sudo /usr/bin/chef-server-ctl user-create bhbalan firstname lastname boobalana85@gmail.com chefrocks --filename /etc/opscode/bhubalan.pem
