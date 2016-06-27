@@ -69,12 +69,6 @@
         "program": "p2p",
         "project": "Chefdelivery"
       }
-    },
-    "availabilitySetSettings": {
-      "type": "object",
-      "metadata": {
-        "description": "Availability Set settings object"
-      }
     }
 
   },
