@@ -1,0 +1,862 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    
+   "location": {
+      "type": "string",
+      "defaultValue": "West US",
+      "allowedValues": [
+         "West US",
+         "North Central US"
+      ],
+      "metadata": {
+        "description": "Location of resources"
+      }
+    },
+
+    "deliveryvmname": {
+       "type": "string",
+       "metadata": {
+          "description": "Name for delivery virtual machine"
+      }
+    },
+
+    "chefservervmname": {
+       "type": "string",
+       "metadata": {
+          "description": "Name for your Chefserver Virtual Machine"
+       }
+    },
+
+    "Provision": {
+       "type": "string",
+       "metadata": {
+          "description": "Name for Provision virtual machine"
+      }
+    },
+
+    "supermarket": {
+       "type": "string",
+       "metadata": {
+          "description": "Name for your supermarket Virtual Machine"
+       }
+    },
+    "build1": {
+       "type": "string",
+       "metadata": {
+          "description": "Name for Build1 virtual machine"
+      }
+    },
+
+    "build2": {
+       "type": "string",
+       "metadata": {
+          "description": "Name for your Build2 server Virtual Machine"
+       }
+    },
+    "build3": {
+       "type": "string",
+       "metadata": {
+          "description": "Name for your Build3 server Virtual Machine"
+       }
+    },
+
+
+    "adminUsername": {
+      "type": "string",
+      "metadata": {
+        "description": "User name for VM"
+      }
+    },
+
+    "adminPassword": {
+      "type": "securestring",
+      "metadata": {
+        "description": "Password for VM"
+      }
+    },
+
+     "storageAccountType": {
+          "type": "string",
+          "allowedValues": [
+          "Standard_LRS"
+            ],
+          "metadata": {
+          "description": "The type of the Storage Account created"
+              },
+          "defaultValue": "Standard_LRS"
+            }
+  },
+
+  "variables": {
+    "imagePublisher": "Canonical",
+    "imageOffer": "UbuntuServer",
+    "ubuntuOSVersion": "14.04.4-LTS",
+    "OSDiskName": "osdiskforsimple",
+    "azureVMUtilsName": "vmCustomizationServerExt",
+    "azureVMUtilsScriptUrl": "https://raw.githubusercontent.com/master/2machine.sh",
+    "nsgName": "chefdelnsg",
+    "nicName": "chefdelNic",
+    "pronsgName": "chefpronsg",
+    "pronicName": "chefproNic",
+    "smnsgName": "chefsmnsg",
+    "smnicName": "chefsmNic",
+    "b1nsgName": "chefb1nsg",
+    "b1nicName": "chefb1Nic",
+    "b2nsgName": "chefb2nsg",
+    "b2nicName": "chefb2Nic",
+    "b3nsgName": "chefb3nsg",
+    "b3nicName": "chefb3Nic",
+    "addressPrefix": "10.0.0.0/16",
+    "subnetName": "subnet1",
+    "subnetPrefix": "10.0.1.0/24",
+    "publicIPAddressName": "chefdPublicIP",
+    "publicIPAddressType": "Static",
+    "propublicIPAddressName": "prochefPublicIP",
+    "propublicIPAddressType": "Static",
+    "smpublicIPAddressName": "smchefPublicIP",
+    "smpublicIPAddressType": "Static",
+    "b1publicIPAddressName": "b1chefPublicIP",
+    "b1publicIPAddressType": "Static",
+    "b2publicIPAddressName": "b2chefPublicIP",
+    "b2publicIPAddressType": "Static",
+    "b3publicIPAddressName": "b3chefPublicIP",
+    "b3publicIPAddressType": "Static",
+    "vmStorageAccountContainerName": "vhds",
+    "vmSize": "Standard_DS1",
+    "storageAccountType": "Standard_LRS",
+    "newStorageAccountName": "[concat(uniqueString(resourceGroup().id),'chefd')]",
+    "virtualNetworkName": "chefd_vnet",
+    "vnetID": "[resourceId('Microsoft.Network/virtualNetworks',variables('virtualNetworkName'))]",
+    "nsgID": "[resourceId('Microsoft.Network/networkSecurityGroups',variables('nsgName'))]",
+    "subnetRef": "[concat(variables('vnetID'),'/subnets/',variables('subnetName'))]",
+    "dnsNameForPublicIP":"[concat('dns',uniqueString(resourceGroup().id),'chefd')]",
+    "chefproForPublicIP":"[concat('dns',uniqueString(resourceGroup().id),'chefpro')]",
+    "chefsmForPublicIP":"[concat('dns',uniqueString(resourceGroup().id),'chefsm')]",
+    "chefb1ForPublicIP":"[concat('dns',uniqueString(resourceGroup().id),'chefb1')]",
+    "chefb2ForPublicIP":"[concat('dns',uniqueString(resourceGroup().id),'chefb2')]",
+    "chefb3ForPublicIP":"[concat('dns',uniqueString(resourceGroup().id),'chefb3')]",
+    "osDiskVhdName": "[concat('http://',variables('newStorageAccountName'),'.blob.core.windows.net/vhds/',parameters('deliveryvmname'),'osDisk')]",
+    "osDiskVhdName1": "[concat('http://',variables('newStorageAccountName'),'.blob.core.windows.net/vhds/',parameters('chefservervmname'),'osDisk')]",
+    "osDiskVhdName2": "[concat('http://',variables('newStorageAccountName'),'.blob.core.windows.net/vhds/',parameters('supermarket'),'osDisk')]",
+    "osDiskVhdName3": "[concat('http://',variables('newStorageAccountName'),'.blob.core.windows.net/vhds/',parameters('Provision'),'osDisk')]",
+    "osDiskVhdName4": "[concat('http://',variables('newStorageAccountName'),'.blob.core.windows.net/vhds/',parameters('build1'),'osDisk')]",
+    "osDiskVhdName5": "[concat('http://',variables('newStorageAccountName'),'.blob.core.windows.net/vhds/',parameters('build2'),'osDisk')]",
+    "osDiskVhdName6": "[concat('http://',variables('newStorageAccountName'),'.blob.core.windows.net/vhds/',parameters('build3'),'osDisk')]",
+    "clientimagePublisher": "Canonical",
+    "clientimageOffer": "UbuntuServer",
+    "clientnsgName": "clientNSG",
+    "clientnicName": "clientNic",
+    "clientubuntuOSVersion": "14.04.4-LTS",
+    "clientOSDiskName": "osdiskforclientsimple",
+    "clientpublicIPAddressName": "clientPublicIP",
+    "clientpublicIPAddressType": "Static",
+    "clientvmSize": "Standard_DS1",
+    "clientnsgID": "[resourceId('Microsoft.Network/networkSecurityGroups',variables('clientnsgName'))]",
+    "clientdnsNameForPublicIP":"[concat('dns',uniqueString(resourceGroup().id),'client')]",
+    "clientosDiskVhdName": "[concat('http://',variables('newStorageAccountName'),'.blob.core.windows.net/vhds/',parameters('chefservervmname'),uniqueString(resourceGroup().id),'osDisk.vhd')]"
+  },
+
+  "resources": [
+     {
+            "type": "Microsoft.Storage/storageAccounts",
+            "name": "[variables('newStorageAccountName')]",
+            "apiVersion": "2015-05-01-preview",
+            "location": "[parameters('location')]",
+            "properties": {
+                "accountType": "[variables('storageAccountType')]"
+            }
+        },
+    {
+      "apiVersion": "2015-05-01-preview",
+      "type": "Microsoft.Network/publicIPAddresses",
+      "name": "[variables('publicIPAddressName')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "publicIPAllocationMethod": "[variables('publicIPAddressType')]",
+        "dnsSettings": {
+          "domainNameLabel": "[variables('dnsNameForPublicIP')]"
+        }
+      }
+    },
+    
+    {
+      "apiVersion": "2015-05-01-preview",
+      "type": "Microsoft.Network/publicIPAddresses",
+      "name": "[variables('clientpublicIPAddressName')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "publicIPAllocationMethod": "[variables('clientpublicIPAddressType')]",
+        "dnsSettings": {
+          "domainNameLabel": "[variables('clientdnsNameForPublicIP')]"
+        }
+      }
+    },
+
+    {
+      "apiVersion": "2015-05-01-preview",
+      "type": "Microsoft.Network/publicIPAddresses",
+      "name": "[variables('propublicIPAddressName')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "publicIPAllocationMethod": "[variables('propublicIPAddressType')]",
+        "dnsSettings": {
+          "domainNameLabel": "[variables('chefproForPublicIP')]"
+        }
+      }
+    },
+    
+    {
+      "apiVersion": "2015-05-01-preview",
+      "type": "Microsoft.Network/publicIPAddresses",
+      "name": "[variables('smpublicIPAddressName')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "publicIPAllocationMethod": "[variables('smpublicIPAddressType')]",
+        "dnsSettings": {
+          "domainNameLabel": "[variables('chefsmForPublicIP')]"
+        }
+      }
+    },
+        {
+      "apiVersion": "2015-05-01-preview",
+      "type": "Microsoft.Network/publicIPAddresses",
+      "name": "[variables('b1publicIPAddressName')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "publicIPAllocationMethod": "[variables('b1publicIPAddressType')]",
+        "dnsSettings": {
+          "domainNameLabel": "[variables('chefb1ForPublicIP')]"
+        }
+      }
+    },
+    
+    {
+      "apiVersion": "2015-05-01-preview",
+      "type": "Microsoft.Network/publicIPAddresses",
+      "name": "[variables('b2publicIPAddressName')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "publicIPAllocationMethod": "[variables('b2publicIPAddressType')]",
+        "dnsSettings": {
+          "domainNameLabel": "[variables('chefb2ForPublicIP')]"
+        }
+      }
+    },
+    
+        {
+      "apiVersion": "2015-05-01-preview",
+      "type": "Microsoft.Network/publicIPAddresses",
+      "name": "[variables('b3publicIPAddressName')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "publicIPAllocationMethod": "[variables('b3publicIPAddressType')]",
+        "dnsSettings": {
+          "domainNameLabel": "[variables('chefb3ForPublicIP')]"
+        }
+      }
+    },   
+
+    {
+      "apiVersion": "2015-05-01-preview",
+      "type": "Microsoft.Network/virtualNetworks",
+      "name": "[variables('virtualNetworkName')]",
+      "location": "[parameters('location')]",
+      
+      "properties": {
+        "addressSpace": {
+          "addressPrefixes": [
+            "[variables('addressPrefix')]"
+          ]
+        },
+        "subnets": [
+          {
+            "name": "[variables('subnetName')]",
+            "properties": {
+              "addressPrefix": "[variables('subnetPrefix')]"
+            }
+            }
+          
+          
+        ]
+      }
+    },
+   {
+      "apiVersion": "2015-05-01-preview",
+      "type": "Microsoft.Network/networkInterfaces",
+      "name": "[variables('nicName')]",
+      "location": "[parameters('location')]",
+      "dependsOn": [
+        "[concat('Microsoft.Network/publicIPAddresses/', variables('publicIPAddressName'))]",
+        "[concat('Microsoft.Network/virtualNetworks/', variables('virtualNetworkName'))]",
+        "[concat('Microsoft.Network/networkSecurityGroups/', variables('nsgName'))]"
+      ],
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig1",
+            "properties": {
+              "privateIPAllocationMethod": "Static",
+              "privateIPAddress": "10.0.1.5",
+              "publicIPAddress": {
+                "id": "[resourceId('Microsoft.Network/publicIPAddresses',variables('publicIPAddressName'))]"
+              },
+              "subnet": {
+                "id": "[variables('subnetRef')]"
+              }
+            }
+          }
+        ],
+        "networkSecurityGroup": {
+                    "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('nsgName'))]"
+                }
+      }
+    },
+
+    {
+      "apiVersion": "2015-05-01-preview",
+      "type": "Microsoft.Network/networkInterfaces",
+      "name": "[variables('clientnicName')]",
+      "location": "[parameters('location')]",
+      "dependsOn": [
+        "[concat('Microsoft.Network/publicIPAddresses/', variables('clientpublicIPAddressName'))]",
+        "[concat('Microsoft.Network/virtualNetworks/', variables('virtualNetworkName'))]",
+        "[concat('Microsoft.Network/networkSecurityGroups/', variables('nsgName'))]"
+      ],
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig2",
+            "properties": {
+              "privateIPAllocationMethod": "Static",
+              "privateIPAddress": "10.0.1.10",
+              "publicIPAddress": {
+                "id": "[resourceId('Microsoft.Network/publicIPAddresses',variables('clientpublicIPAddressName'))]"
+              },
+              "subnet": {
+                "id": "[variables('subnetRef')]"
+              }
+            }
+          }
+        ],
+        "networkSecurityGroup": {
+                    "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('nsgName'))]"
+                }
+      }
+    },
+
+    {
+      "apiVersion": "2015-05-01-preview",
+      "type": "Microsoft.Network/networkInterfaces",
+      "name": "[variables('pronicName')]",
+      "location": "[parameters('location')]",
+      "dependsOn": [
+        "[concat('Microsoft.Network/publicIPAddresses/', variables('propublicIPAddressName'))]",
+        "[concat('Microsoft.Network/virtualNetworks/', variables('virtualNetworkName'))]",
+        "[concat('Microsoft.Network/networkSecurityGroups/', variables('nsgName'))]"
+      ],
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig3",
+            "properties": {
+              "privateIPAllocationMethod": "Static",
+              "privateIPAddress": "10.0.1.15",
+              "publicIPAddress": {
+                "id": "[resourceId('Microsoft.Network/publicIPAddresses',variables('propublicIPAddressName'))]"
+              },
+              "subnet": {
+                "id": "[variables('subnetRef')]"
+              }
+            }
+          }
+        ],
+        "networkSecurityGroup": {
+                    "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('nsgName'))]"
+                }
+      }
+    },
+      {
+      "apiVersion": "2015-05-01-preview",
+      "type": "Microsoft.Network/networkInterfaces",
+      "name": "[variables('smnicName')]",
+      "location": "[parameters('location')]",
+      "dependsOn": [
+        "[concat('Microsoft.Network/publicIPAddresses/', variables('smpublicIPAddressName'))]",
+        "[concat('Microsoft.Network/virtualNetworks/', variables('virtualNetworkName'))]",
+        "[concat('Microsoft.Network/networkSecurityGroups/', variables('nsgName'))]"
+      ],
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig4",
+            "properties": {
+              "privateIPAllocationMethod": "Static",
+              "privateIPAddress": "10.0.1.16",
+              "publicIPAddress": {
+                "id": "[resourceId('Microsoft.Network/publicIPAddresses',variables('smpublicIPAddressName'))]"
+              },
+              "subnet": {
+                "id": "[variables('subnetRef')]"
+              }
+            }
+          }
+        ],
+        "networkSecurityGroup": {
+                    "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('nsgName'))]"
+                }
+      }
+    },
+
+        {
+      "apiVersion": "2015-05-01-preview",
+      "type": "Microsoft.Network/networkInterfaces",
+      "name": "[variables('b1nicName')]",
+      "location": "[parameters('location')]",
+      "dependsOn": [
+        "[concat('Microsoft.Network/publicIPAddresses/', variables('b1publicIPAddressName'))]",
+        "[concat('Microsoft.Network/virtualNetworks/', variables('virtualNetworkName'))]",
+        "[concat('Microsoft.Network/networkSecurityGroups/', variables('nsgName'))]"
+      ],
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig5",
+            "properties": {
+              "privateIPAllocationMethod": "Static",
+              "privateIPAddress": "10.0.1.17",
+              "publicIPAddress": {
+                "id": "[resourceId('Microsoft.Network/publicIPAddresses',variables('b1publicIPAddressName'))]"
+              },
+              "subnet": {
+                "id": "[variables('subnetRef')]"
+              }
+            }
+          }
+        ],
+        "networkSecurityGroup": {
+                    "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('nsgName'))]"
+                }
+      }
+    },
+     {
+      "apiVersion": "2015-05-01-preview",
+      "type": "Microsoft.Network/networkInterfaces",
+      "name": "[variables('b2nicName')]",
+      "location": "[parameters('location')]",
+      "dependsOn": [
+        "[concat('Microsoft.Network/publicIPAddresses/', variables('b2publicIPAddressName'))]",
+        "[concat('Microsoft.Network/virtualNetworks/', variables('virtualNetworkName'))]",
+        "[concat('Microsoft.Network/networkSecurityGroups/', variables('nsgName'))]"
+      ],
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig6",
+            "properties": {
+              "privateIPAllocationMethod": "Static",
+              "privateIPAddress": "10.0.1.18",
+              "publicIPAddress": {
+                "id": "[resourceId('Microsoft.Network/publicIPAddresses',variables('b2publicIPAddressName'))]"
+              },
+              "subnet": {
+                "id": "[variables('subnetRef')]"
+              }
+            }
+          }
+        ],
+        "networkSecurityGroup": {
+                    "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('nsgName'))]"
+                }
+      }
+    },
+      {
+      "apiVersion": "2015-05-01-preview",
+      "type": "Microsoft.Network/networkInterfaces",
+      "name": "[variables('b3nicName')]",
+      "location": "[parameters('location')]",
+      "dependsOn": [
+        "[concat('Microsoft.Network/publicIPAddresses/', variables('b3publicIPAddressName'))]",
+        "[concat('Microsoft.Network/virtualNetworks/', variables('virtualNetworkName'))]",
+        "[concat('Microsoft.Network/networkSecurityGroups/', variables('nsgName'))]"
+      ],
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig7",
+            "properties": {
+              "privateIPAllocationMethod": "Static",
+              "privateIPAddress": "10.0.1.19",
+              "publicIPAddress": {
+                "id": "[resourceId('Microsoft.Network/publicIPAddresses',variables('b3publicIPAddressName'))]"
+              },
+              "subnet": {
+                "id": "[variables('subnetRef')]"
+              }
+            }
+          }
+        ],
+        "networkSecurityGroup": {
+                    "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('nsgName'))]"
+                }
+      }
+    },
+
+    {
+      "apiVersion": "2015-05-01-preview",
+            "type": "Microsoft.Network/networkSecurityGroups",
+            "name": "[variables('nsgName')]",
+            "location": "[parameters('location')]",
+            "properties": {
+                "securityRules": [
+           
+                    {
+                        "name": "open",
+                        "properties": {
+                            "protocol": "*",
+                            "sourcePortRange": "*",
+                            "destinationPortRange": "*",
+                            "sourceAddressPrefix": "*",
+                            "destinationAddressPrefix": "*",
+                            "access": "Allow",
+                            "priority": 1300,
+                            "direction": "Inbound"
+                        }
+                    }
+                    
+                    ]
+                  }
+    },
+
+     
+    {
+      "apiVersion": "2015-05-01-preview",
+      "type": "Microsoft.Compute/virtualMachines",
+      "name": "[parameters('deliveryvmname')]",
+      "location": "[parameters('location')]",
+      "dependsOn": [
+              "[concat('Microsoft.Storage/storageAccounts/', variables('newStorageAccountName'))]",
+              "[concat('Microsoft.Network/networkInterfaces/', variables('nicName'))]"
+      ],
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "[variables('vmSize')]"
+        },
+        "osProfile": {
+          "computerName": "[parameters('deliveryvmname')]",
+          "adminUsername": "[parameters('adminUsername')]",
+          "adminPassword": "[parameters('adminPassword')]"
+        },
+        "storageProfile": {
+            "imageReference": {
+               "publisher": "[variables('imagePublisher')]",
+                "offer": "[variables('imageOffer')]",
+                "sku" : "[variables('ubuntuOSVersion')]",
+                "version":"latest"
+                
+            },
+          "osDisk": {
+            "name": "[concat(parameters('deliveryvmname'),'osDisk')]",
+            "vhd": {
+                    "uri": "[concat(variables('osDiskVhdName'),'.vhd')]"
+                        },
+            "caching": "ReadWrite",
+            "createOption": "FromImage"
+            
+            
+          }
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces',variables('nicName'))]"
+            }
+          ]
+        }
+      }
+    },
+
+    {
+      "apiVersion": "2015-05-01-preview",
+      "type": "Microsoft.Compute/virtualMachines",
+      "name": "[parameters('Provision')]",
+      "location": "[parameters('location')]",
+      "dependsOn": [
+              "[concat('Microsoft.Storage/storageAccounts/', variables('newStorageAccountName'))]",
+              "[concat('Microsoft.Network/networkInterfaces/', variables('pronicName'))]"
+      ],
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "[variables('vmSize')]"
+        },
+        "osProfile": {
+          "computerName": "[parameters('Provision')]",
+          "adminUsername": "[parameters('adminUsername')]",
+          "adminPassword": "[parameters('adminPassword')]"
+        },
+        "storageProfile": {
+            "imageReference": {
+               "publisher": "[variables('imagePublisher')]",
+                "offer": "[variables('imageOffer')]",
+                "sku" : "[variables('ubuntuOSVersion')]",
+                "version":"latest"
+                
+            },
+          "osDisk": {
+            "name": "[concat(parameters('Provision'),'osDisk')]",
+            "vhd": {
+                    "uri": "[concat(variables('osDiskVhdName3'),'.vhd')]"
+                        },
+            "caching": "ReadWrite",
+            "createOption": "FromImage"
+            
+            
+          }
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces',variables('pronicName'))]"
+            }
+          ]
+        }
+      }
+    },
+
+    {
+      "apiVersion": "2015-05-01-preview",
+      "type": "Microsoft.Compute/virtualMachines",
+      "name": "[parameters('supermarket')]",
+      "location": "[parameters('location')]",
+      "dependsOn": [
+              "[concat('Microsoft.Storage/storageAccounts/', variables('newStorageAccountName'))]",
+              "[concat('Microsoft.Network/networkInterfaces/', variables('smnicName'))]"
+      ],
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "[variables('vmSize')]"
+        },
+        "osProfile": {
+          "computerName": "[parameters('supermarket')]",
+          "adminUsername": "[parameters('adminUsername')]",
+          "adminPassword": "[parameters('adminPassword')]"
+        },
+        "storageProfile": {
+            "imageReference": {
+               "publisher": "[variables('imagePublisher')]",
+                "offer": "[variables('imageOffer')]",
+                "sku" : "[variables('ubuntuOSVersion')]",
+                "version":"latest"
+                
+            },
+          "osDisk": {
+            "name": "[concat(parameters('supermarket'),'osDisk')]",
+            "vhd": {
+                    "uri": "[concat(variables('osDiskVhdName2'),'.vhd')]"
+                        },
+            "caching": "ReadWrite",
+            "createOption": "FromImage"
+            
+            
+          }
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces',variables('smnicName'))]"
+            }
+          ]
+        }
+      }
+    }, 
+
+        {
+      "apiVersion": "2015-05-01-preview",
+      "type": "Microsoft.Compute/virtualMachines",
+      "name": "[parameters('build1')]",
+      "location": "[parameters('location')]",
+      "dependsOn": [
+              "[concat('Microsoft.Storage/storageAccounts/', variables('newStorageAccountName'))]",
+              "[concat('Microsoft.Network/networkInterfaces/', variables('b1nicName'))]"
+      ],
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "[variables('vmSize')]"
+        },
+        "osProfile": {
+          "computerName": "[parameters('build1')]",
+          "adminUsername": "[parameters('adminUsername')]",
+          "adminPassword": "[parameters('adminPassword')]"
+        },
+        "storageProfile": {
+            "imageReference": {
+               "publisher": "[variables('imagePublisher')]",
+                "offer": "[variables('imageOffer')]",
+                "sku" : "[variables('ubuntuOSVersion')]",
+                "version":"latest"
+                
+            },
+          "osDisk": {
+            "name": "[concat(parameters('build1'),'osDisk')]",
+            "vhd": {
+                    "uri": "[concat(variables('osDiskVhdName4'),'.vhd')]"
+                        },
+            "caching": "ReadWrite",
+            "createOption": "FromImage"
+            
+            
+          }
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces',variables('b1nicName'))]"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "apiVersion": "2015-05-01-preview",
+      "type": "Microsoft.Compute/virtualMachines",
+      "name": "[parameters('build2')]",
+      "location": "[parameters('location')]",
+      "dependsOn": [
+              "[concat('Microsoft.Storage/storageAccounts/', variables('newStorageAccountName'))]",
+              "[concat('Microsoft.Network/networkInterfaces/', variables('b2nicName'))]"
+      ],
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "[variables('vmSize')]"
+        },
+        "osProfile": {
+          "computerName": "[parameters('build2')]",
+          "adminUsername": "[parameters('adminUsername')]",
+          "adminPassword": "[parameters('adminPassword')]"
+        },
+        "storageProfile": {
+            "imageReference": {
+               "publisher": "[variables('imagePublisher')]",
+                "offer": "[variables('imageOffer')]",
+                "sku" : "[variables('ubuntuOSVersion')]",
+                "version":"latest"
+                
+            },
+          "osDisk": {
+            "name": "[concat(parameters('build2'),'osDisk')]",
+            "vhd": {
+                    "uri": "[concat(variables('osDiskVhdName5'),'.vhd')]"
+                        },
+            "caching": "ReadWrite",
+            "createOption": "FromImage"
+            
+            
+          }
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces',variables('b2nicName'))]"
+            }
+          ]
+        }
+      }
+    },
+
+     {
+      "apiVersion": "2015-05-01-preview",
+      "type": "Microsoft.Compute/virtualMachines",
+      "name": "[parameters('build3')]",
+      "location": "[parameters('location')]",
+      "dependsOn": [
+              "[concat('Microsoft.Storage/storageAccounts/', variables('newStorageAccountName'))]",
+              "[concat('Microsoft.Network/networkInterfaces/', variables('b3nicName'))]"
+      ],
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "[variables('vmSize')]"
+        },
+        "osProfile": {
+          "computerName": "[parameters('build3')]",
+          "adminUsername": "[parameters('adminUsername')]",
+          "adminPassword": "[parameters('adminPassword')]"
+        },
+        "storageProfile": {
+            "imageReference": {
+               "publisher": "[variables('imagePublisher')]",
+                "offer": "[variables('imageOffer')]",
+                "sku" : "[variables('ubuntuOSVersion')]",
+                "version":"latest"
+                
+            },
+          "osDisk": {
+            "name": "[concat(parameters('build3'),'osDisk')]",
+            "vhd": {
+                    "uri": "[concat(variables('osDiskVhdName6'),'.vhd')]"
+                        },
+            "caching": "ReadWrite",
+            "createOption": "FromImage"
+            
+            
+          }
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces',variables('b3nicName'))]"
+            }
+          ]
+        }
+      }
+    },
+
+
+    {
+      "apiVersion": "2015-05-01-preview",
+      "type": "Microsoft.Compute/virtualMachines",
+      "name": "[parameters('chefservervmname')]",
+      "location": "[parameters('location')]",
+      "dependsOn": [
+            "[concat('Microsoft.Storage/storageAccounts/', variables('newStorageAccountName'))]",
+            "[concat('Microsoft.Network/networkInterfaces/', variables('clientnicName'))]"
+      ],
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "[variables('clientvmSize')]"
+        },
+        "osProfile": {
+          "computerName": "[parameters('chefservervmname')]",
+          "adminUsername": "[parameters('adminUsername')]",
+          "adminPassword": "[parameters('adminPassword')]"
+        },
+        "storageProfile": {
+              "imageReference": {
+               "publisher": "[variables('clientimagePublisher')]",
+                "offer": "[variables('clientimageOffer')]",
+                "sku" : "[variables('clientubuntuOSVersion')]",
+                "version": "latest"
+                
+            },
+          "osDisk": {
+            "name": "[concat(parameters('chefservervmname'),'osDisk')]",
+            "vhd": {
+                    "uri": "[concat(variables('osDiskVhdName1'),'.vhd')]"
+            },
+            "caching": "ReadWrite",
+            "createOption": "FromImage"
+           
+            
+          }
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces',variables('clientnicName'))]"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
